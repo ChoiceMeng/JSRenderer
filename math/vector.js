@@ -48,7 +48,7 @@ Vector2.prototype.normalize=function()
     this.y *= num;
 };
 
-Vector.Zero = function()
+Vector2.Zero = function()
 {
     return new Vector2(0, 0);
 };
@@ -65,14 +65,14 @@ Vector2.Normalize = function(vec)
     return newVec;
 };
 
-Vector2.DistanceSqrared(pos1, pos2)
+Vector2.DistanceSqrared = function(pos1, pos2)
 {
     let disX = pos1.x - pos2.x;
     let disY = pos1.y - pos2.y;
     return (disX * disX + disY * disY);
 };
 
-Vector2.Distance(pos1, pos2)
+Vector2.Distance = function(pos1, pos2)
 {
     return Math.sqrt(Vector2.DistanceSqrared(pos1, pos2));
 };
