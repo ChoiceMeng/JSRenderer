@@ -273,3 +273,48 @@ Matrix.Transpose = function Transpose(matrix) {
     result.m[15] = matrix.m[15];
     return result;
 };
+
+// 构建观察矩阵
+Matrix.LookAtLH = function LookAtLH(eye, target, up) {
+    let zAxis = target.subtract(eye);
+    zAxis.normalize();
+    let xAxis = Vector3.Cross(up, zAxis);
+    xAxis.normalize();
+    let yAxis = Vector3.Cross(zAxis, xAxis);
+    yAxis.normalize();
+    let ex = -Vector3.Dot(xAxis, eye);
+    let ey = -Vector3.Dot(yAxis, eye);
+    let ez = -Vector3.Dot(zAxis, eye);
+    return Matrix.FromValues(xAxis.x, yAxis.x, zAxis.x, 0, xAxis.y, yAxis.y, zAxis.y, 0, xAxis.z, yAxis.z, zAxis.z, 0, ex, ey, ez, 1);
+};
+
+// 构建透视投影矩阵1:通过相机左右边界宽高与远近裁剪面
+Matrix.PerspectiveLH = function PerspectiveLH(width, height, znear, zfar) {
+    let matrix = Matrix.Zero();
+    matrix.m[0] = (2.0 * znear) / width;
+    matrix.m[1] = matrix.m[2] = matrix.m[3] = 0.0;
+    matrix.m[5] = (2.0 * znear) / height;
+    matrix.m[4] = matrix.m[6] = matrix.m[7] = 0.0;
+    matrix.m[10] = -zfar / (znear - zfar);
+    matrix.m[8] = matrix.m[9] = 0.0;
+    matrix.m[11] = 1.0;
+    matrix.m[12] = matrix.m[13] = matrix.m[15] = 0.0;
+    matrix.m[14] = (znear * zfar) / (znear - zfar);
+    return matrix;
+};
+
+// 构建透视投影矩阵2:通过FOV与远近裁剪面
+Matrix.PerspectiveFovLH = function PerspectiveFovLH(fov, aspect, znear, zfar) {
+    let matrix = Matrix.Zero();
+    let tan = 1.0 / (Math.tan(fov * 0.5));
+    matrix.m[0] = tan / aspect;
+    matrix.m[1] = matrix.m[2] = matrix.m[3] = 0.0;
+    matrix.m[5] = tan;
+    matrix.m[4] = matrix.m[6] = matrix.m[7] = 0.0;
+    matrix.m[8] = matrix.m[9] = 0.0;
+    matrix.m[10] = -zfar / (znear - zfar);
+    matrix.m[11] = 1.0;
+    matrix.m[12] = matrix.m[13] = matrix.m[15] = 0.0;
+    matrix.m[14] = (znear * zfar) / (znear - zfar);
+    return matrix;
+};
