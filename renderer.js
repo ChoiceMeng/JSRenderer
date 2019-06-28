@@ -240,11 +240,11 @@ Renderer.prototype.RasterTriangle = function (v1, v2, v3) {
         // 平顶
         if(v1.position.y > v3.position.y)
         {
-
+            DrawTriangleTop(v1, v2, v3);
         }
         else{
             // 平底
-
+            DrawTriangleBottom(v3, v1, v2);
         }
     }
     else if(v1.position.y == v3.position.y)
@@ -252,11 +252,11 @@ Renderer.prototype.RasterTriangle = function (v1, v2, v3) {
         // 平顶
         if(v1.position.y > v2.position.y)
         {
-
+            DrawTriangleTop(v1, v3, v2);
         }
         else{
             // 平底
-
+            DrawTriangleBottom(v2, v1, v3);
         }
     }
     else if(v2.position.y == v3.position.y)
@@ -264,12 +264,12 @@ Renderer.prototype.RasterTriangle = function (v1, v2, v3) {
         // 平顶
         if(v2.position.y > v1.position.y)
         {
-
+            DrawTriangleTop(v2, v3, v1);
         }
         else
         {
             // 平底
-
+            DrawTriangleBottom(v1, v2, v3);
         }
     }
     else{
@@ -278,8 +278,57 @@ Renderer.prototype.RasterTriangle = function (v1, v2, v3) {
         let mid;
         let bottom;
 
+        if(v1.position.y > v2.position.y && v2.position.y > v3.position.y)
+        {
+            top = v3;
+            mid = v2;
+            bottom = v1;
+        }
+        else if(v1.position.y > v3.position.y && v3.position.y > v2.position.y)
+        {
+            top = v2;
+            mid = v3;
+            bottom = v1;
+        }
+        else if(v2.position.y > v3.position.y && v3.position.y > v1.position.y)
+        {
+            top = v1;
+            mid = v3;
+            bottom = v2;
+        }
+        else if(v2.position.y > v1.position.y && v1.position.y > v3.position.y)
+        {
+            top = v3;
+            mid = v1;
+            bottom = v2;
+        }
+        else if(v3.position.y > v1.position.y && v1.position.y > v2.position.y)
+        {
+            top = v2;
+            mid = v1;
+            bottom = v3;
+        }
+        else if(v3.position.y > v2.position.y && v2.position.y > v1.position.y)
+        {
+            top = v1;
+            mid = v2;
+            bottom = v3;
+        }
+
         
     }
+}
+
+// 光栅化平底三角形:v1为上顶点
+Renderer.prototype.DrawTriangleBottom = function(v1, v2, v3)
+{
+
+}
+
+// 光栅化平顶三角形:v3为下顶点
+Renderer.prototype.DrawTriangleTop = function(v1, v2, v3)
+{
+
 }
 
 Renderer.prototype.TransToScreenPos = function(vertex)
