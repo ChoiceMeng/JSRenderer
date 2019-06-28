@@ -140,7 +140,7 @@ Vector3.TransformCoordinates = function TransformCoordinates(vector, transformat
     let z = vector.x * transformation[2] + vector.y * transformation[6] + vector.z * transformation[10] + transformation[14];
     let w = vector.x * transformation[3] + vector.y * transformation[7] + vector.z * transformation[11] + transformation[15];
 
-    return new Vector3(x, y, z,)
+    return new Vector3(x/w, y/w, z/w);
 };
 Vector3.TransformNormal = function TransformNormal(vector, transformation) {
     let x = vector.x * transformation[0] + vector.y * transformation[4] + vector.z * transformation[8];
