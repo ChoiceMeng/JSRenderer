@@ -123,6 +123,7 @@ Renderer.prototype.DirectionLightShader_VS = function (vsInput, worldMatrix, vie
 
     return ({
         position: position2D,
+        onePerZ : 1,    // 用于保存1/z，1/z用在透视纹理投影插值上，因为透视投影插值与z不成线性关系，与1/z成线性关系
         normal: normal,
         texcoord: vsInput.texcoord
     });
@@ -234,17 +235,18 @@ Renderer.prototype.WireFrameRaster = function (v1, v2, v3) {
 
 // 光栅化三角形
 Renderer.prototype.RasterTriangle = function (v1, v2, v3) {
+    let pixels = {};
     // 判断三角形类型
     if(v1.position.y == v2.position.y)
     {
         // 平顶
         if(v1.position.y > v3.position.y)
         {
-            DrawTriangleTop(v1, v2, v3);
+            DrawTriangleTop(v1, v2, v3, pixels);
         }
         else{
             // 平底
-            DrawTriangleBottom(v3, v1, v2);
+            DrawTriangleBottom(v3, v1, v2, pixels);
         }
     }
     else if(v1.position.y == v3.position.y)
@@ -252,11 +254,11 @@ Renderer.prototype.RasterTriangle = function (v1, v2, v3) {
         // 平顶
         if(v1.position.y > v2.position.y)
         {
-            DrawTriangleTop(v1, v3, v2);
+            DrawTriangleTop(v1, v3, v2, pixels);
         }
         else{
             // 平底
-            DrawTriangleBottom(v2, v1, v3);
+            DrawTriangleBottom(v2, v1, v3, pixels);
         }
     }
     else if(v2.position.y == v3.position.y)
@@ -264,12 +266,12 @@ Renderer.prototype.RasterTriangle = function (v1, v2, v3) {
         // 平顶
         if(v2.position.y > v1.position.y)
         {
-            DrawTriangleTop(v2, v3, v1);
+            DrawTriangleTop(v2, v3, v1, pixels);
         }
         else
         {
             // 平底
-            DrawTriangleBottom(v1, v2, v3);
+            DrawTriangleBottom(v1, v2, v3, pixels);
         }
     }
     else{
@@ -315,24 +317,160 @@ Renderer.prototype.RasterTriangle = function (v1, v2, v3) {
             bottom = v3;
         }
 
-        
+        let newMid = {};
+        // 插值出纹理坐标
+        let t = (mid.position.y - top.position.y) / (bottom.position.y - top.position.y);
+        newMid = this.LerpVertext(top, bottom, t);
+
+        // 使用相似三角形的性质(A1边/B1边=A2/B2边),找出中点x坐标(屏幕坐标)
+        let midX = (mid.position.y - top.position.y) / (bottom.position.y - top.position.y) * (bottom.position.x - top.position.x) + top.position.x;
+        newMid.position.x = midX;   // 单独重置下x，因为上面插值出来的x肯定是不正确的
+        newMid.position.y = mid.position.y;
+
+        // 得出插值后该三角形所有光栅化的像素点
+        // 平底三角形
+        this.DrawTriangleBottom(top, newMid, mid, pixels);
+        // 平顶三角形
+        this.DrawTriangleTop(newMid, mid, bottom, pixels);
+    }   
+
+    return pixels;
+}
+
+// 过渡插值函数
+Renderer.prototype.Lerp = function(a, b, t)
+{
+    if (a > b){
+        return a - (a - b) * t;
+    }
+    return a + (b - a) * t;
+}
+
+// 过渡插值顶点数据
+Renderer.prototype.LerpVertext = function(v1, v2, t)
+{
+    let res = {};
+    if(v1.position){
+        res.position = this.LerpVector3(v1.position , v2.position , t);
+    }
+    if(v1.normal){
+        res.normal = this.LerpVector3(v1.normal , v2.normal , t);
+    }
+    if(v1.texcoord){
+        res.texcoord = this.LerpVector2(v1.texcoord , v2.texcoord , t);
+    }
+    if(v1.worldPosition){
+        res.worldPosition = this.LerpVector3(v1.worldPosition, v2.worldPosition, t);
+    }
+    if (v1.lightViewPosition){
+        res.lightViewPosition = this.LerpVector3(v1.lightViewPosition , v2.lightViewPosition , t);
+    }
+
+    return res;
+}
+
+// 插值vector3
+Raster.prototype.LerpVector3 = function(v1 , v2 , gradient){
+    let vx = this.Lerp(v1.x , v2.x , gradient);
+    let vy = this.Lerp(v1.y , v2.y , gradient);
+    let vz = this.Lerp(v1.z , v2.z , gradient);
+    return new Vector3(vx , vy , vz);
+};
+
+Raster.prototype.LerpVector2 = function(v1 , v2 , gradient){
+    let vx = this.Lerp(v1.x , v2.x , gradient);
+    let vy = this.Lerp(v1.y , v2.y , gradient);
+    return new Vector2(vx , vy);
+};
+
+// 光栅化平底三角形:v1为上顶点
+Renderer.prototype.DrawTriangleBottom = function(v1, v2, v3, pixels)
+{
+    for (let y = v1.position.y; y <= v2.position.y; y++)
+    {
+        if(y > 0 && y < this.canvasHeight)
+        {
+            // 这里xl和xr不一定就在左边和右边，因为没有判定xl和xr的大小，下面代码会判定
+            let xl = (y - p1.position.y) * (p2.position.x - p1.position.x) / (p2.position.y - p1.position.y) + p1.position.x;
+            let xr = (y - p1.position.y) * (p3.position.x - p1.position.x) / (p3.position.y - p1.position.y) + p1.position.x;
+ 
+            let dy = y - p1.position.y;
+            let t = dy / (p3.position.y - p1.position.y);
+
+            // 生成当前y值对应的左右x值
+            let lX = {};
+            lX = this.LerpVertext(p1, p2, t);
+            rX = this.LerpVertext(p1, p3, t);
+
+            lX.x = xl;
+            lX.y = y;
+
+            rX.x = xr;
+            rX.y = y;
+
+            if(xl < xr)
+            {
+                this.ScanlineProcess(lX, rX, pixels);
+            }
+            else{
+                this.ScanlineProcess(rX, lX, pixels);
+            }
+        }
     }
 }
 
-// 光栅化平底三角形:v1为上顶点
-Renderer.prototype.DrawTriangleBottom = function(v1, v2, v3)
+// 光栅化平顶三角形:v3为下顶点
+Renderer.prototype.DrawTriangleTop = function(v1, v2, v3, pixels)
 {
+    for (let y = v1.position.y; y <= v3.position.y; y++)
+    {
+        if(y > 0 && y < this.canvasHeight)
+        {
+            let xl = (y - p1.position.y) * (p3.position.x - p1.position.x) / (p3.position.y - p1.position.y) + p1.position.x;
+            let xr = (y - p2.position.y) * (p3.position.x - p2.position.x) / (p3.position.y - p2.position.y) + p2.position.x;
+ 
+            let dy = y - p1.position.y;
+            let t = dy / (p3.position.y - p1.position.y);
 
+            // 生成当前y值对应的左右x值
+            let lX = {};
+            lX = this.LerpVertext(p1, p2, t);
+            rX = this.LerpVertext(p1, p3, t);
+
+            lX.x = xl;
+            lX.y = y;
+
+            rX.x = xr;
+            rX.y = y;
+
+            if(xl < xr)
+            {
+                this.ScanlineProcess(lX, rX, pixels);
+            }
+            else{
+                this.ScanlineProcess(rX, lX, pixels);
+            }
+        }
+    }
 }
 
-// 光栅化平顶三角形:v3为下顶点
-Renderer.prototype.DrawTriangleTop = function(v1, v2, v3)
+// 光栅化一排扫描线
+Renderer.prototype.ScanlineProcess = function(lVertext, rVertext, pixels)
 {
-
+    for(let x = lVertext.position.x; x < rVertext.position.x; ++x)
+    {
+        if(x > 0 && x <= this.canvasWidth)
+        {
+            let gradient = (x - lVertext.position.x) / (rVertext.position.x - lVertext.position.x);
+            let v = this.LerpVertext(lVertext, rVertext, gradient);
+            pixels.push(v);
+        }
+    }
 }
 
 Renderer.prototype.TransToScreenPos = function(vertex)
-{
+{    
+    vertex.onePerZ = 1 / vertex.position.z;
     // 先执行透视除法，由CVV->NDC
     vertex.position.x = vertex.position.x / vertex.position.w;
     vertex.position.y = vertex.position.y / vertex.position.w;
