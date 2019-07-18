@@ -85,11 +85,12 @@ Vector2.Transform = function Transform(vector, transformation) {
 };
 
 /////////////////Vector3
-function Vector3(initX, initY, initZ)
+function Vector3(initX, initY, initZ, initW)
 {
     this.x = initX;
     this.y = initY;
     this.z = initZ;
+    this.w = initW;
 };
 
 Vector3.prototype.add = function (otherVector) {
@@ -130,22 +131,22 @@ Vector3.Up = function Up() {
     return new Vector3(0, 1, 0);
 };
 Vector3.Copy = function Copy(source) {
-    return new Vector3(source.x, source.y, source.z);
+    return new Vector3(source.x, source.y, source.z, source.w);
 };
 
-// /w归一化
-Vector3.TransformCoordinates = function TransformCoordinates(vector, transformation) {
-    let x = vector.x * transformation[0] + vector.y * transformation[4] + vector.z * transformation[8] + transformation[12];
-    let y = vector.x * transformation[1] + vector.y * transformation[5] + vector.z * transformation[9] + transformation[13];
-    let z = vector.x * transformation[2] + vector.y * transformation[6] + vector.z * transformation[10] + transformation[14];
-    let w = vector.x * transformation[3] + vector.y * transformation[7] + vector.z * transformation[11] + transformation[15];
 
-    return new Vector3(x/w, y/w, z/w);
+Vector3.TransformCoordinates = function TransformCoordinates(vector, transformation) {
+    let x = vector.x * transformation.m[0] + vector.y * transformation.m[4] + vector.z * transformation.m[8] + transformation.m[12];
+    let y = vector.x * transformation.m[1] + vector.y * transformation.m[5] + vector.z * transformation.m[9] + transformation.m[13];
+    let z = vector.x * transformation.m[2] + vector.y * transformation.m[6] + vector.z * transformation.m[10] + transformation.m[14];
+    let w = vector.x * transformation.m[3] + vector.y * transformation.m[7] + vector.z * transformation.m[11] + transformation.m[15];
+
+    return new Vector3(x, y, z, w);
 };
 Vector3.TransformNormal = function TransformNormal(vector, transformation) {
-    let x = vector.x * transformation[0] + vector.y * transformation[4] + vector.z * transformation[8];
-    let y = vector.x * transformation[1] + vector.y * transformation[5] + vector.z * transformation[9];
-    let z = vector.x * transformation[2] + vector.y * transformation[6] + vector.z * transformation[10];
+    let x = vector.x * transformation.m[0] + vector.y * transformation.m[4] + vector.z * transformation.m[8];
+    let y = vector.x * transformation.m[1] + vector.y * transformation.m[5] + vector.z * transformation.m[9];
+    let z = vector.x * transformation.m[2] + vector.y * transformation.m[6] + vector.z * transformation.m[10];
 
     return new Vector2(x, y, z);
 };

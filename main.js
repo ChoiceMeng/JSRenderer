@@ -4,6 +4,7 @@ const {app, BrowserWindow} = require('electron')
     win = new BrowserWindow({width: 800, height: 600, webPreferences: {
       nodeIntegration: true
     }})
+    win.webContents.openDevTools()
     // Ȼ�����Ӧ�õ� index.html
     win.loadFile('index.html')
   }

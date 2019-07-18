@@ -44,9 +44,9 @@ Renderer.prototype.renderDirectionLightShader = function (model, worldMatrix, vi
     model.meshes.forEach(mesh => {
         mesh.Faces.forEach(face => {
 
-            let v1 = DirectionLightShader_VS(mesh.Vertices[face.A], worldMatrix, viewMatrix, projectionMatrix);
-            let v2 = DirectionLightShader_VS(mesh.Vertices[face.B], worldMatrix, viewMatrix, projectionMatrix);
-            let v3 = DirectionLightShader_VS(mesh.Vertices[face.C], worldMatrix, viewMatrix, projectionMatrix);
+            let v1 = this.DirectionLightShader_VS(mesh.Vertices[face.A], worldMatrix, viewMatrix, projectionMatrix);
+            let v2 = this.DirectionLightShader_VS(mesh.Vertices[face.B], worldMatrix, viewMatrix, projectionMatrix);
+            let v3 = this.DirectionLightShader_VS(mesh.Vertices[face.C], worldMatrix, viewMatrix, projectionMatrix);
 
             vertexs.push(v1);
             vertexs.push(v2);
@@ -63,7 +63,7 @@ Renderer.prototype.renderDirectionLightShader = function (model, worldMatrix, vi
         if (this.enableWireFrame) {
             WireFrameRaster(v1, v2, v3);
         } else {
-            let res = SolidRaster(v1, v2, v3);
+            let res = this.SolidRaster(v1, v2, v3);
             res.forEach(v => {
                 let color = DirectionLightShader_PS(v, texture, light);
                 this.drawPoint(v.position, color);
@@ -74,11 +74,7 @@ Renderer.prototype.renderDirectionLightShader = function (model, worldMatrix, vi
 };
 
 // 点光源着色接口
-Device.prototype.renderPointLightShader = function (model, worldMatrix, viewMatrix, projectionMatrix, texture, light) {
-
-    let shader = new ShaderDevice(this);
-    let raster = new Raster(this);
-
+Renderer.prototype.renderPointLightShader = function (model, worldMatrix, viewMatrix, projectionMatrix, texture, light) {
     let vertexs = [];
 
     model.meshes.forEach(mesh => {
@@ -204,17 +200,17 @@ Renderer.prototype.PointLightShader_PS = function (psInput, texture, light) {
 // 实体光栅化
 Renderer.prototype.SolidRaster = function (v1, v2, v3) {
     // CVV裁剪
-    if(CVVClip(v1) || CVVClip(v2) || CVVClip(v3)) return;
+    if(this.CVVClip(v1) || this.CVVClip(v2) || this.CVVClip(v3)) return;
 
     this.TransToScreenPos(v1);
     this.TransToScreenPos(v2);
     this.TransToScreenPos(v3);
 
-    if(device.enableCCWCull && this.ccwJudge(v1 , v2 , v3)){
+    if(this.enableCCWCull && this.ccwJudge(v1 , v2 , v3)){
         return [];
     }
 
-    if(device.enableCWCull && !this.ccwJudge(v1 , v2 , v3)){
+    if(this.enableCWCull && !this.ccwJudge(v1 , v2 , v3)){
         return [];
     }
 
@@ -235,7 +231,7 @@ Renderer.prototype.WireFrameRaster = function (v1, v2, v3) {
 
 // 光栅化三角形
 Renderer.prototype.RasterTriangle = function (v1, v2, v3) {
-    let pixels = {};
+    let pixels = [];
     // 判断三角形类型
     if(v1.position.y == v2.position.y)
     {
@@ -276,9 +272,9 @@ Renderer.prototype.RasterTriangle = function (v1, v2, v3) {
     }
     else{
         // 需分割三角形
-        let top;
-        let mid;
-        let bottom;
+        let top = {};
+        let mid = {};
+        let bottom = {};
 
         if(v1.position.y > v2.position.y && v2.position.y > v3.position.y)
         {
@@ -318,6 +314,8 @@ Renderer.prototype.RasterTriangle = function (v1, v2, v3) {
         }
 
         let newMid = {};
+        //let t = (v1.position.y - v2.position.y) / (v1.position.y - v2.position.y);
+        //dump_obj(mid);
         // 插值出纹理坐标
         let t = (mid.position.y - top.position.y) / (bottom.position.y - top.position.y);
         newMid = this.LerpVertext(top, bottom, t);
@@ -336,6 +334,14 @@ Renderer.prototype.RasterTriangle = function (v1, v2, v3) {
 
     return pixels;
 }
+
+function dump_obj(myObject) {  
+    var s = "";  
+    for (var property in myObject) {  
+     s = s + "\n "+property +": " + myObject[property] ;  
+    }  
+    alert(s);  
+  }  
 
 // 过渡插值函数
 Renderer.prototype.Lerp = function(a, b, t)
@@ -370,14 +376,14 @@ Renderer.prototype.LerpVertext = function(v1, v2, t)
 }
 
 // 插值vector3
-Raster.prototype.LerpVector3 = function(v1 , v2 , gradient){
+Renderer.prototype.LerpVector3 = function(v1 , v2 , gradient){
     let vx = this.Lerp(v1.x , v2.x , gradient);
     let vy = this.Lerp(v1.y , v2.y , gradient);
     let vz = this.Lerp(v1.z , v2.z , gradient);
     return new Vector3(vx , vy , vz);
 };
 
-Raster.prototype.LerpVector2 = function(v1 , v2 , gradient){
+Renderer.prototype.LerpVector2 = function(v1 , v2 , gradient){
     let vx = this.Lerp(v1.x , v2.x , gradient);
     let vy = this.Lerp(v1.y , v2.y , gradient);
     return new Vector2(vx , vy);
@@ -481,7 +487,7 @@ Renderer.prototype.TransToScreenPos = function(vertex)
     vertex.position.y = (1 - vertex.position.y) * 0.5 * this.canvasHeight;
 }
 
-Renderer.prototype.CVVClip(vertex) = function(vertex)
+Renderer.prototype.CVVClip = function(vertex)
 {
     //此处还未进行透视除法。为什么用x,y,z与w比较?结合透视除法之后x,y,z在NDC空间中的范围是 x-1,1  y-1,1  z0,1，则未经透视除法之前的x=[-w,w],y=[-w,w],z=[0,w]
     if(vertex.position.x >= -vertex.position.w && vertex.position.x <= vertex.position.w &&
@@ -492,7 +498,7 @@ Renderer.prototype.CVVClip(vertex) = function(vertex)
     }
 
     return false;
-}
+};
 
 Renderer.prototype.ccwJudge = function (v1 , v2 , v3) {
     let d1 = v2.position.subtract(v1.position);
