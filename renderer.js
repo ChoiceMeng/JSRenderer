@@ -65,7 +65,7 @@ Renderer.prototype.renderDirectionLightShader = function (model, worldMatrix, vi
         } else {
             let res = this.SolidRaster(v1, v2, v3);
             res.forEach(v => {
-                let color = DirectionLightShader_PS(v, texture, light);
+                let color = this.DirectionLightShader_PS(v, texture, light);
                 this.drawPoint(v.position, color);
             });
         }
@@ -119,7 +119,7 @@ Renderer.prototype.DirectionLightShader_VS = function (vsInput, worldMatrix, vie
 
     return ({
         position: position2D,
-        onePerZ : 1,    // 用于保存1/z，1/z用在透视纹理投影插值上，因为透视投影插值与z不成线性关系，与1/z成线性关系
+        onePerZ : 1,    // onePerZ用于保存1/z，1/z用在透视纹理投影插值上，因为透视投影插值与z不成线性关系，与1/z成线性关系
         normal: normal,
         texcoord: vsInput.texcoord
     });
@@ -200,7 +200,7 @@ Renderer.prototype.PointLightShader_PS = function (psInput, texture, light) {
 // 实体光栅化
 Renderer.prototype.SolidRaster = function (v1, v2, v3) {
     // CVV裁剪
-    if(this.CVVClip(v1) || this.CVVClip(v2) || this.CVVClip(v3)) return;
+    if(this.CVVClip(v1) || this.CVVClip(v2) || this.CVVClip(v3)) return[];
 
     this.TransToScreenPos(v1);
     this.TransToScreenPos(v2);
@@ -390,9 +390,9 @@ Renderer.prototype.LerpVector2 = function(v1 , v2 , gradient){
 };
 
 // 光栅化平底三角形:v1为上顶点
-Renderer.prototype.DrawTriangleBottom = function(v1, v2, v3, pixels)
+Renderer.prototype.DrawTriangleBottom = function(p1, p2, p3, pixels)
 {
-    for (let y = v1.position.y; y <= v2.position.y; y++)
+    for (let y = p1.position.y; y <= p2.position.y; y++)
     {
         if(y > 0 && y < this.canvasHeight)
         {
@@ -426,9 +426,9 @@ Renderer.prototype.DrawTriangleBottom = function(v1, v2, v3, pixels)
 }
 
 // 光栅化平顶三角形:v3为下顶点
-Renderer.prototype.DrawTriangleTop = function(v1, v2, v3, pixels)
+Renderer.prototype.DrawTriangleTop = function(p1, p2, p3, pixels)
 {
-    for (let y = v1.position.y; y <= v3.position.y; y++)
+    for (let y = p1.position.y; y <= p3.position.y; y++)
     {
         if(y > 0 && y < this.canvasHeight)
         {
@@ -473,6 +473,33 @@ Renderer.prototype.ScanlineProcess = function(lVertext, rVertext, pixels)
         }
     }
 }
+
+Renderer.prototype.drawPoint = function (point, color) {
+    if (point.x >= 0 && point.y >= 0 && point.x < this.canvasWidth && point.y < this.canvasHeight) {
+        let x = point.x;
+        let y = point.y;
+        let z = point.z;
+
+        this.backbufferdata = this.backBuffer.data;
+        let index = ((x >> 0) + (y >> 0) * this.canvasWidth) * 4;
+
+        // 深度测试
+        if (this.enableDepthTest && this.depthBuffer[index / 4] < z) {
+            return;
+        }
+
+        this.depthBuffer[index / 4] = z;
+
+        this.backbufferdata[index] = color.r * 255;
+        this.backbufferdata[index + 1] = color.g * 255;
+        this.backbufferdata[index + 2] = color.b * 255;
+        this.backbufferdata[index + 3] = color.a * 255;
+    }
+};
+
+Renderer.prototype.present = function () {
+    this.canvasContext.putImageData(this.backBuffer, 0, 0);
+};
 
 Renderer.prototype.TransToScreenPos = function(vertex)
 {    

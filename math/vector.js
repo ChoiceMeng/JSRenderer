@@ -85,12 +85,12 @@ Vector2.Transform = function Transform(vector, transformation) {
 };
 
 /////////////////Vector3
-function Vector3(initX, initY, initZ, initW)
+function Vector3(initX, initY, initZ)
 {
     this.x = initX;
     this.y = initY;
     this.z = initZ;
-    this.w = initW;
+    this.w = 1;
 };
 
 Vector3.prototype.add = function (otherVector) {
@@ -131,7 +131,7 @@ Vector3.Up = function Up() {
     return new Vector3(0, 1, 0);
 };
 Vector3.Copy = function Copy(source) {
-    return new Vector3(source.x, source.y, source.z, source.w);
+    return new Vector3(source.x, source.y, source.z);
 };
 
 
@@ -139,16 +139,16 @@ Vector3.TransformCoordinates = function TransformCoordinates(vector, transformat
     let x = vector.x * transformation.m[0] + vector.y * transformation.m[4] + vector.z * transformation.m[8] + transformation.m[12];
     let y = vector.x * transformation.m[1] + vector.y * transformation.m[5] + vector.z * transformation.m[9] + transformation.m[13];
     let z = vector.x * transformation.m[2] + vector.y * transformation.m[6] + vector.z * transformation.m[10] + transformation.m[14];
-    let w = vector.x * transformation.m[3] + vector.y * transformation.m[7] + vector.z * transformation.m[11] + transformation.m[15];
+    this.w = vector.x * transformation.m[3] + vector.y * transformation.m[7] + vector.z * transformation.m[11] + transformation.m[15];
 
-    return new Vector3(x, y, z, w);
+    return new Vector3(x, y, z);
 };
 Vector3.TransformNormal = function TransformNormal(vector, transformation) {
     let x = vector.x * transformation.m[0] + vector.y * transformation.m[4] + vector.z * transformation.m[8];
     let y = vector.x * transformation.m[1] + vector.y * transformation.m[5] + vector.z * transformation.m[9];
     let z = vector.x * transformation.m[2] + vector.y * transformation.m[6] + vector.z * transformation.m[10];
 
-    return new Vector2(x, y, z);
+    return new Vector3(x, y, z);
 };
 Vector3.Dot = function Dot(left, right) {
     return left.x * right.x + left.y * right.y + left.z * right.z;
