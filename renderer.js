@@ -61,7 +61,7 @@ Renderer.prototype.renderDirectionLightShader = function (model, worldMatrix, vi
         let v3 = vertexs[i * 3 + 2];
 
         if (this.enableWireFrame) {
-            WireFrameRaster(v1, v2, v3);
+            this.WireFrameRaster(v1, v2, v3);
         } else {
             let res = this.SolidRaster(v1, v2, v3);
             res.forEach(v => {
@@ -227,6 +227,31 @@ Renderer.prototype.WireFrameRaster = function (v1, v2, v3) {
     this.drawLine(v1 , v2);
     this.drawLine(v2 , v3);
     this.drawLine(v3 , v1);
+};
+
+Renderer.prototype.drawLine = function (v0, v1) {
+    let x0 = v0.position.x >> 0;
+    let y0 = v0.position.y >> 0;
+    let x1 = v1.position.x >> 0;
+    let y1 = v1.position.y >> 0;
+    let dx = Math.abs(x1 - x0);
+    let dy = Math.abs(y1 - y0);
+    let sx = (x0 < x1) ? 1 : -1;
+    let sy = (y0 < y1) ? 1 : -1;
+    let err = dx - dy;
+    while (true) {
+        this.drawPoint(new Vector2(x0, y0, 1.0), new Color4(1 , 1 , 1, 1));
+        if ((x0 === x1) && (y0 === y1)) break;
+        let e2 = 2 * err;
+        if (e2 > -dy) {
+            err -= dy;
+            x0 += sx;
+        }
+        if (e2 < dx) {
+            err += dx;
+            y0 += sy;
+        }
+    }
 };
 
 // 光栅化三角形
@@ -485,7 +510,7 @@ Renderer.prototype.drawPoint = function (point, color) {
 
         // 深度测试
         if (this.enableDepthTest && this.depthBuffer[index / 4] < z) {
-            return;
+            //return;
         }
 
         this.depthBuffer[index / 4] = z;
@@ -503,11 +528,14 @@ Renderer.prototype.present = function () {
 
 Renderer.prototype.TransToScreenPos = function(vertex)
 {    
-    vertex.onePerZ = 1 / vertex.position.z;
+    vertex.onePerZ = 1 / vertex.position.w;
     // 先执行透视除法，由CVV->NDC
     vertex.position.x = vertex.position.x / vertex.position.w;
     vertex.position.y = vertex.position.y / vertex.position.w;
     vertex.position.z = vertex.position.z / vertex.position.w;
+
+    vertex.texcoord.x = vertex.texcoord.x * vertex.onePerZ;
+    vertex.texcoord.y = vertex.texcoord.z * vertex.onePerZ;
     
     // ndc->屏幕坐标，注意这里转换完的屏幕坐标左上角为[0，0]
     vertex.position.x = (vertex.position.x + 1) * 0.5 * this.canvasWidth;
