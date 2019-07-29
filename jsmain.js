@@ -117,13 +117,13 @@ function Render() {
 
     device.present();
 
-    displayFPS();
+    displayFPS(rolation);
 
     requestAnimationFrame(Render);
 }
 
 
-function displayFPS() {
+function displayFPS(rot) {
 
     frameCount += 1;
 
@@ -134,7 +134,7 @@ function displayFPS() {
         frameCount = 0;
     }
 
-    document.getElementById("fpsDisplay").innerText = fps;
+    document.getElementById("fpsDisplay").innerText = fps + "," + rot;
 }
 
 function UpdateWireFrameMode() {

@@ -339,9 +339,8 @@ Renderer.prototype.RasterTriangle = function (v1, v2, v3) {
         }
 
         let newMid = {};
-        //let t = (v1.position.y - v2.position.y) / (v1.position.y - v2.position.y);
-        //dump_obj(mid);
-        // 插值出纹理坐标
+
+        // 插值出顶点数据
         let t = (mid.position.y - top.position.y) / (bottom.position.y - top.position.y);
         newMid = this.LerpVertext(top, bottom, t);
 
@@ -372,10 +371,21 @@ function dump_obj(myObject) {
 Renderer.prototype.Lerp = function(a, b, t)
 {
     if (a > b){
-        return a - (a - b) * t;
+        return a - (a - b) * this.clamp(t);
     }
-    return a + (b - a) * t;
+    return a + (b - a) * this.clamp(t);
 }
+
+// 限制数值范围在0和1之间
+Renderer.prototype.clamp = function (value, min, max) {
+    if (typeof min === "undefined") {
+        min = 0;
+    }
+    if (typeof max === "undefined") {
+        max = 1;
+    }
+    return Math.max(min, Math.min(value, max));
+};
 
 // 过渡插值顶点数据
 Renderer.prototype.LerpVertext = function(v1, v2, t)
@@ -430,14 +440,16 @@ Renderer.prototype.DrawTriangleBottom = function(p1, p2, p3, pixels)
 
             // 生成当前y值对应的左右x值
             let lX = {};
+            let rX = {};
+
             lX = this.LerpVertext(p1, p2, t);
-            rX = this.LerpVertext(p1, p3, t);
+            rX = this.LerpVertext(p1, p3, t);            
 
-            lX.x = xl;
-            lX.y = y;
+            lX.position.x = xl;
+            lX.position.y = y;
 
-            rX.x = xr;
-            rX.y = y;
+            rX.position.x = xr;
+            rX.position.y = y;
 
             if(xl < xr)
             {
@@ -465,14 +477,16 @@ Renderer.prototype.DrawTriangleTop = function(p1, p2, p3, pixels)
 
             // 生成当前y值对应的左右x值
             let lX = {};
-            lX = this.LerpVertext(p1, p2, t);
-            rX = this.LerpVertext(p1, p3, t);
+            let rX = {};
 
-            lX.x = xl;
-            lX.y = y;
+            lX = this.LerpVertext(p1, p3, t);
+            rX = this.LerpVertext(p2, p3, t);
+            
+            lX.position.x = xl;
+            lX.position.y = y;
 
-            rX.x = xr;
-            rX.y = y;
+            rX.position.x = xr;
+            rX.position.y = y;
 
             if(xl < xr)
             {
@@ -510,7 +524,7 @@ Renderer.prototype.drawPoint = function (point, color) {
 
         // 深度测试
         if (this.enableDepthTest && this.depthBuffer[index / 4] < z) {
-            //return;
+            return;
         }
 
         this.depthBuffer[index / 4] = z;
@@ -549,10 +563,10 @@ Renderer.prototype.CVVClip = function(vertex)
         vertex.position.y >= -vertex.position.w && vertex.position.y <= vertex.position.w && 
         vertex.position.z >= 0 && vertex.position.z <= vertex.position.w)
     {
-        return true;
+        return false;
     }
 
-    return false;
+    return true;
 };
 
 Renderer.prototype.ccwJudge = function (v1 , v2 , v3) {

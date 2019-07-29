@@ -139,9 +139,11 @@ Vector3.TransformCoordinates = function TransformCoordinates(vector, transformat
     let x = vector.x * transformation.m[0] + vector.y * transformation.m[4] + vector.z * transformation.m[8] + transformation.m[12];
     let y = vector.x * transformation.m[1] + vector.y * transformation.m[5] + vector.z * transformation.m[9] + transformation.m[13];
     let z = vector.x * transformation.m[2] + vector.y * transformation.m[6] + vector.z * transformation.m[10] + transformation.m[14];
-    this.w = vector.x * transformation.m[3] + vector.y * transformation.m[7] + vector.z * transformation.m[11] + transformation.m[15];
+    let w = vector.x * transformation.m[3] + vector.y * transformation.m[7] + vector.z * transformation.m[11] + transformation.m[15];
 
-    return new Vector3(x, y, z);
+    var pos = new Vector3(x, y, z);
+    pos.w = w;
+    return pos;
 };
 Vector3.TransformNormal = function TransformNormal(vector, transformation) {
     let x = vector.x * transformation.m[0] + vector.y * transformation.m[4] + vector.z * transformation.m[8];
