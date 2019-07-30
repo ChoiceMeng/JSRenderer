@@ -263,11 +263,11 @@ Renderer.prototype.RasterTriangle = function (v1, v2, v3) {
         // 平顶
         if(v1.position.y > v3.position.y)
         {
-            DrawTriangleTop(v1, v2, v3, pixels);
+            this.DrawTriangleTop(v1, v2, v3, pixels);
         }
         else{
             // 平底
-            DrawTriangleBottom(v3, v1, v2, pixels);
+            this.DrawTriangleBottom(v3, v1, v2, pixels);
         }
     }
     else if(v1.position.y == v3.position.y)
@@ -275,11 +275,11 @@ Renderer.prototype.RasterTriangle = function (v1, v2, v3) {
         // 平顶
         if(v1.position.y > v2.position.y)
         {
-            DrawTriangleTop(v1, v3, v2, pixels);
+            this.DrawTriangleTop(v1, v3, v2, pixels);
         }
         else{
             // 平底
-            DrawTriangleBottom(v2, v1, v3, pixels);
+            this.DrawTriangleBottom(v2, v1, v3, pixels);
         }
     }
     else if(v2.position.y == v3.position.y)
@@ -287,12 +287,12 @@ Renderer.prototype.RasterTriangle = function (v1, v2, v3) {
         // 平顶
         if(v2.position.y > v1.position.y)
         {
-            DrawTriangleTop(v2, v3, v1, pixels);
+            this.DrawTriangleTop(v2, v3, v1, pixels);
         }
         else
         {
             // 平底
-            DrawTriangleBottom(v1, v2, v3, pixels);
+            this.DrawTriangleBottom(v1, v2, v3, pixels);
         }
     }
     else{
@@ -398,6 +398,7 @@ Renderer.prototype.LerpVertext = function(v1, v2, t)
         res.normal = this.LerpVector3(v1.normal , v2.normal , t);
     }
     if(v1.texcoord){
+        // Todo:此处应进行1/z透视纹理插值
         res.texcoord = this.LerpVector2(v1.texcoord , v2.texcoord , t);
     }
     if(v1.worldPosition){
@@ -548,8 +549,8 @@ Renderer.prototype.TransToScreenPos = function(vertex)
     vertex.position.y = vertex.position.y / vertex.position.w;
     vertex.position.z = vertex.position.z / vertex.position.w;
 
-    vertex.texcoord.x = vertex.texcoord.x * vertex.onePerZ;
-    vertex.texcoord.y = vertex.texcoord.z * vertex.onePerZ;
+    //vertex.texcoord.x = vertex.texcoord.x * vertex.onePerZ;
+    //vertex.texcoord.y = vertex.texcoord.y * vertex.onePerZ;
     
     // ndc->屏幕坐标，注意这里转换完的屏幕坐标左上角为[0，0]
     vertex.position.x = (vertex.position.x + 1) * 0.5 * this.canvasWidth;
